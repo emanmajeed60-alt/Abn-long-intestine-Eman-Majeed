@@ -1,0 +1,69 @@
+{
+  "SEEDS": [
+    42,
+    123,
+    2024,
+    7,
+    99
+  ],
+  "EPOCHS": 40,
+  "FL_ROUNDS": 20,
+  "FL_LOCAL_EP": 2,
+  "BATCH": 8,
+  "IMG_SIZE": 352,
+  "QUICK_TEST": false,
+  "RUN_ABLATION": true,
+  "RUN_KVASIR_AND_FED": true,
+  "RUN_M2": true,
+  "RUN_S2": true,
+  "RUN_AUG2": true,
+  "RUN_M8": true,
+  "M8_HASH_THR": 8,
+  "N_LIME": 50,
+  "N_GC": 100,
+  "M2_TUNED_CFG": {
+    "select_best": true,
+    "lr_decay_rounds": [
+      10,
+      15
+    ]
+  },
+  "VAL_PER_IMAGE": false,
+  "datasets": {
+    "Kvasir-SEG": 100,
+    "CVC-ClinicDB": 62,
+    "CVC-300": 60,
+    "CVC-ColonDB": 380,
+    "ETIS": 196
+  },
+  "train_val_sizes": {
+    "Kvasir-SEG": {
+      "train": 810,
+      "val": 90
+    },
+    "CVC-ClinicDB": {
+      "train": 495,
+      "val": 55
+    }
+  },
+  "protocol": "PraNet: train = 900 Kvasir-SEG + 550 CVC-ClinicDB (val = random 10% of each, seed 42, checkpoint selection only); test = five official PraNet test sets",
+  "model": "ResNet50 (ImageNet) encoder + U-Net decoder (BN), 352x352, sigmoid",
+  "preprocessing": "keras.applications.resnet50.preprocess_input (one function everywhere)",
+  "optimizer": "Adam lr 1e-4; centralised: ReduceLROnPlateau(val Dice, 0.5, patience 5) + best-val checkpoint; federated: constant lr, Adam reset every client-round, last-round model",
+  "loss": "BCE + Dice",
+  "threshold": 0.5,
+  "augmentation": "on the fly, training batches only (after the split); main = mild _augment; stronger = _augment_strong (aug2: zoom 0.70-1.0, brightness/contrast, saturation, hue, light noise) -> results_*_aug2",
+  "federated": {
+    "clients": [
+      "Kvasir-SEG",
+      "CVC-ClinicDB"
+    ],
+    "aggregation": "size-weighted (equal-weight variant: S2)",
+    "init": "ImageNet encoder, no warm start",
+    "FedProx_mu": 0.01,
+    "FedBN": "BN params + statistics local; deployable variants: probability-map ensemble, AdaBN (M6)"
+  },
+  "statistics": "per-image Dice averaged over seeds; paired sign-flip test on the MEAN difference (20000), Holm; 95% bootstrap CI (10000) unadjusted + Bonferroni-adjusted; Wilcoxon + Hodges-Lehmann reported alongside",
+  "near_duplicate_audit": "FOV-cropped pHash (Hamming <= 8) + SSIM >= 0.9 confirmation; sequence groups = connected components of the hash graph (M8)",
+  "created": "2026-11-11T09:56:05"
+}
